@@ -5,7 +5,7 @@ import { Button,Spinner,Badge } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { sendNotification } from './Admin';
 import Admin from './Admin';
-import {isIOS} from 'react-device-detect';
+import {isIOS, isSafari} from 'react-device-detect';
 
 // Firebase App (the core Firebase SDK) is always required and
 // must be listed before other Firebase SDKs
@@ -34,7 +34,7 @@ function App() {
                 console.log("sign in!!");
                 setIsLogin(true);
                 // set notification
-                if (!isIOS){
+                if (!isIOS && !isSafari){
                     const messaging = initializedFirebaseApp.messaging();
                     messaging.getToken({vapidKey: 'BMeM3zegjeImJOciQYtRKw_UHd6CoKUVg0iKDZ19H5wQ91MLI-WZE8Ues7MwEF29_7PuSfxDdRcINP6cSmEdwOw'}).then((currentToken) => {
                         if (currentToken) {
@@ -92,7 +92,7 @@ function App() {
             });
         }
         if(currentQueue === myQueue){
-            if(!isIOS){
+            if(!isIOS && !isSafari){
                 sendNotification(clientToken);
             }
         }
