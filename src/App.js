@@ -1,9 +1,11 @@
-// import './App.css';
+import './App.css';
 import React, { useState, useEffect } from 'react';
 // https://react-bootstrap.netlify.app/components/alerts/
 import { Button,Spinner,Badge } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { sendNotification } from './admin';
+import { sendNotification } from './Admin';
+import Admin from './Admin';
+import {isIOS} from 'react-device-detect';
 
 // Firebase App (the core Firebase SDK) is always required and
 // must be listed before other Firebase SDKs
@@ -15,10 +17,10 @@ import "firebase/database";
 import 'firebase/messaging';
 
 // for notification
-import { messaging } from "./init-fb";
+import { initializedFirebaseApp } from "./init-fb";
 
 function App() {
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLogin, setIsLogin] = useState(false);
     const [currentQueue, setCurrentQueue] = useState(-1);
     const [clientToken, setClientToken] = useState("");
     const [myQueue, setMyQueue] = useState(0);
@@ -26,36 +28,40 @@ function App() {
     const [maxTempQueue, setMaxTempQueue] = useState(0);
 
     useEffect(() => {
-        // messaging.getToken({vapidKey: 'BG-a-Os5Oj_h6vslrY_T4O1HspRzkGSNi-EX5BGaGD_4t8lrU3IUYZzfLe_lOm4ktJrkfer3eqqR8FdIkStPXcQ'}).then((currentToken) => {
-        //     if (currentToken) {
-        //         // Send the token to your server and update the UI if necessary
-        //         // ...
-        //         console.log(currentToken);
-        //         setClientToken(currentToken);
-        //     } else {
-        //         // Show permission request UI
-        //         console.log('No registration token available. Request permission to generate one.');
-        //         // ...
-        //     }
-        // }).catch((err) => {
-        //     console.log('An error occurred while retrieving token. ', err);
-        //     // ...
-        // });
-        // set notification
-        messaging.requestPermission()
-            .then(async function() {
-                const token = await messaging.getToken();
-                console.log(token);
-                setClientToken(token);
-            })
-            .catch(function(err) {
-                console.log("Unable to get permission to notify.", err);
-            });
-        navigator.serviceWorker.addEventListener("message", (message) => console.log(message));
         // sign in
         firebase.auth().signInAnonymously()
             .then(() => {
-                console.log("sign in!!")
+                console.log("sign in!!");
+                setIsLogin(true);
+                // set notification
+                if (!isIOS){
+                    const messaging = initializedFirebaseApp.messaging();
+                    messaging.getToken({vapidKey: 'BMeM3zegjeImJOciQYtRKw_UHd6CoKUVg0iKDZ19H5wQ91MLI-WZE8Ues7MwEF29_7PuSfxDdRcINP6cSmEdwOw'}).then((currentToken) => {
+                        if (currentToken) {
+                            // Send the token to your server and update the UI if necessary
+                            // ...
+                            console.log(currentToken);
+                            setClientToken(currentToken);
+                        } else {
+                            // Show permission request UI
+                            console.log('No registration token available. Request permission to generate one.');
+                            // ...
+                        }
+                    }).catch((err) => {
+                        console.log('An error occurred while retrieving token. ', err);
+                        // ...
+                    });
+                    // messaging.requestPermission()
+                    //     .then(async function() {
+                    //         const token = await messaging.getToken();
+                    //         console.log(token);
+                    //         setClientToken(token);
+                    //     })
+                    //     .catch(function(err) {
+                    //         console.log("Unable to get permission to notify.", err);
+                    //     });
+                    navigator.serviceWorker.addEventListener("message", (message) => console.log(message));
+                }
             })
             .catch((error) => {
                 var errorCode = error.code;
@@ -63,8 +69,7 @@ function App() {
                 console.log(errorCode, errorMessage);
             });
         // https://firebase.google.com/docs/database
-        var starCountRef = firebase.database().ref('/current_queue');
-        starCountRef.on('value', (snapshot) => {
+        firebase.database().ref('/current_queue').on('value', (snapshot) => {
             const data = snapshot.val();
             setCurrentQueue(data);
         });
@@ -73,6 +78,7 @@ function App() {
             setMaxTempQueue(data);
         });
     },[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (firebase.auth().currentUser){
             firebase.database().ref('users/' + firebase.auth().currentUser.uid).on('value', (snapshot) => {
@@ -83,11 +89,12 @@ function App() {
                 }else{
                     setIsQueued(false);
                 }
-                setIsLoading(false);
             });
         }
         if(currentQueue === myQueue){
-            sendNotification(clientToken);
+            if(!isIOS){
+                sendNotification(clientToken);
+            }
         }
     });
     const onButtonClick = () => {
@@ -120,7 +127,7 @@ function App() {
         }
     };
     const showMainPanel = () => {
-        if (isLoading){
+        if (!isLogin || currentQueue === -1){
             return (
                 <Spinner animation="border" role="status">
                     <span className="sr-only">Loading...</span>
@@ -139,8 +146,9 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
+                <Admin currentQueue={currentQueue}/>
                 {showMainPanel()}
-                {/*<Button onClick={() => testSendNotice()}>Test Send notification</Button>*/}
+                {/*<Button onClick={() => sendNotification(clientToken)}>1 - Test Send notification</Button>*/}
             </header>
         </div>
     );

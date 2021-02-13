@@ -1,5 +1,4 @@
 import firebase from "firebase/app";
-import "firebase/messaging";
 const firebaseConfig = {
     apiKey: "AIzaSyBDdUJPdBT0s0TqZpgQzDqkzLIBXDHn3Hs",
     authDomain: "react-queue-d3e89.firebaseapp.com",
@@ -10,5 +9,4 @@ const firebaseConfig = {
     measurementId: "G-96RND75CS1"
 };
 const initializedFirebaseApp = firebase.initializeApp(firebaseConfig);
-const messaging = initializedFirebaseApp.messaging();
-export { messaging };
+export { initializedFirebaseApp };
